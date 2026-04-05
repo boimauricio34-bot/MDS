@@ -1,23 +1,26 @@
 --[[
-    SCRIPT SIMPLES PARA ANIME FINAL QUEST
-    Funcionalidades: Auto Farm, Auto Heal, Auto Dodge
+    SCRIPT CUSTOMIZADO PARA ANIME FINAL QUEST
+    Autor: Personalizado para você
+    Funcionalidades: Auto Farm, Auto Heal, Auto Dodge, Auto Kill, Auto Replay
 --]]
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
--- Configurações (você pode mudar os valores)
+-- ============ CONFIGURAÇÕES (VOCÊ MUDA AQUI) ============
 local config = {
-    autoFarm = true,      -- Bater sozinho
-    autoHeal = true,      -- Curar automaticamente
-    autoDodge = true,     -- Disperta automático
-    healPercent = 40,     -- Cura quando vida < 40%
-    dodgeInterval = 2,    -- Disperta a cada 2 segundos
-    attackInterval = 0.5  -- Ataca a cada 0.5 segundos
+    autoFarm = true,           -- Bater sozinho (Auto Farm / Auto Kill)
+    autoHeal = true,           -- Curar automaticamente
+    autoDodge = true,          -- Disperta automático
+    autoReplay = true,         -- Refazer a fase sozinho
+    healPercent = 40,          -- Cura quando vida < 40%
+    dodgeInterval = 1.5,       -- Disperta a cada 1.5 segundos
+    attackInterval = 0.3,      -- Ataca a cada 0.3 segundos
+    replayDelay = 3,           -- Espera 3 segundos antes de replay
 }
 
--- Função para encontrar o inimigo mais próximo
+-- ============ FUNÇÃO PARA ENCONTRAR INIMIGO MAIS PRÓXIMO ============
 local function getClosestEnemy()
     local closest = nil
     local shortestDistance = math.huge
@@ -39,36 +42,34 @@ local function getClosestEnemy()
     return closest
 end
 
--- Auto Farm (bater)
+-- ============ AUTO FARM / AUTO KILL ============
 spawn(function()
     while config.autoFarm and task.wait(config.attackInterval) do
         local enemy = getClosestEnemy()
         if enemy and enemy:FindFirstChild("HumanoidRootPart") then
-            -- Olha pro inimigo
+            -- Olha para o inimigo
             character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position, enemy.HumanoidRootPart.Position)
             
-            -- Ativa o botão de ataque (simula clique)
-            local virtualInput = game:GetService("VirtualInputManager")
-            virtualInput:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-            task.wait(0.05)
-            virtualInput:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+            -- Simula o clique de ataque (botão M1)
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton1(Vector2.new(0, 0))
         end
-        task.wait()
     end
 end)
 
--- Auto Heal (cura automática)
+-- ============ AUTO HEAL (CURA AUTOMÁTICA) ============
 spawn(function()
     while config.autoHeal and task.wait(1) do
         local healthPercent = (humanoid.Health / humanoid.MaxHealth) * 100
         if healthPercent < config.healPercent then
-            -- Tenta usar poção de cura
+            -- Procura poção no inventário
             local backpack = player.Backpack
             for _, item in ipairs(backpack:GetChildren()) do
                 if item:IsA("Tool") and (item.Name:lower():find("potion") or item.Name:lower():find("cura") or item.Name:lower():find("health")) then
-                    player.Character:FindFirstChild(item.Name) or item.Parent = character
+                    -- Equipa e usa a poção
+                    item.Parent = character
                     task.wait(0.1)
-                    -- Ativa a poção
                     local tool = character:FindFirstChild(item.Name)
                     if tool then
                         tool:Activate()
@@ -80,18 +81,37 @@ spawn(function()
     end
 end)
 
--- Auto Dodge (disperta automático)
+-- ============ AUTO DODGE (DISPERA AUTOMÁTICO) ============
 spawn(function()
     while config.autoDodge and task.wait(config.dodgeInterval) do
-        -- Simula o dash (normalmente é a tecla Q ou botão na tela)
-        local virtualInput = game:GetService("VirtualInputManager")
-        virtualInput:SendKeyEvent(true, "Q", false, game)
-        task.wait(0.1)
-        virtualInput:SendKeyEvent(false, "Q", false, game)
+        -- Simula o dash (tecla Q no PC, botão no celular)
+        local VirtualUser = game:GetService("VirtualUser")
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new(0, 0))
     end
 end)
 
-print("Script carregado! Configurações:")
+-- ============ AUTO REPLAY (REFAZER A FASE) ============
+spawn(function()
+    while config.autoReplay and task.wait(config.replayDelay) do
+        -- Procura o botão de replay na tela
+        local replayButton = nil
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("TextButton") and (v.Name:lower():find("replay") or v.Name:lower():find("again") or v.Name:lower():find("restart")) then
+                replayButton = v
+                break
+            end
+        end
+        
+        if replayButton then
+            replayButton:Click()
+        end
+    end
+end)
+
+-- ============ MENSAGEM DE CONFIRMAÇÃO ============
+print("✅ SCRIPT CARREGADO COM SUCESSO!")
 print("Auto Farm:", config.autoFarm)
 print("Auto Heal:", config.autoHeal, "- Vida <", config.healPercent, "%")
 print("Auto Dodge:", config.autoDodge, "- Intervalo:", config.dodgeInterval, "s")
+print("Auto Replay:", config.autoReplay)
